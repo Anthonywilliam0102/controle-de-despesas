@@ -1,3 +1,19 @@
+// --- CONFIGURAÇÃO FIREBASE ---
+const firebaseConfig = {
+    apiKey: "AIzaSyDBWJ3Ld4ZaXSXTXN1Xi9zFfnCEt-vbaok",
+    authDomain: "controle-despesas-4dd73.firebaseapp.com",
+    databaseURL: "https://controle-despesas-4dd73-default-rtdb.firebaseio.com",
+    projectId: "controle-despesas-4dd73",
+    storageBucket: "controle-despesas-4dd73.firebasestorage.app",
+    messagingSenderId: "882977986254",
+    appId: "1:882977986254:web:890d62a1079962be34629f",
+    measurementId: "G-4X6B2JQQHW"
+};
+
+// Inicializa Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 // --- Elementos do DOM ---
 const themeToggleBtn = document.getElementById('theme-toggle');
 const form = document.getElementById('transaction-form');
@@ -7,29 +23,23 @@ const filterMonth = document.getElementById('filter-month');
 const filterYear = document.getElementById('filter-year');
 const dateInput = document.getElementById('date-input');
 
-// Elementos de Dashboard
 const elTotalIncomes = document.getElementById('total-incomes');
 const elTotalExpenses = document.getElementById('total-expenses');
 const elBalance = document.getElementById('monthly-balance');
 const elIncomeMaria = document.getElementById('income-maria');
 const elIncomeLucas = document.getElementById('income-lucas');
 
-// Selects do formulário
 const typeSelect = document.getElementById('trans-type');
 const categorySelect = document.getElementById('category');
 
 // --- Configuração ---
-const STORAGE_KEY = 'financasMariaLucas_v2'; // Chave nova para evitar conflito com versão anterior
 const THEME_KEY = 'financasTheme';
-
 let currentDate = new Date();
 let selectedMonth = String(currentDate.getMonth() + 1);
 let selectedYear = String(currentDate.getFullYear());
 
-// Estrutura de dados: transactions[ano][mes] = []
 let transactions = {}; 
 
-// Categorias
 const categoriesExpense = [
     "Contas Fixas (Luz/Água/Net)", "Alimentação / Mercado", "Gasolina / Transporte",
     "Educação", "Streaming / Assinaturas", "Lazer / Restaurante", 
@@ -43,28 +53,31 @@ const categoriesIncome = [
 // --- Inicialização ---
 document.addEventListener('DOMContentLoaded', () => {
     loadTheme();
-    loadData();
+    startSync(); // Substitui o loadData antigo
     populateDateSelectors();
-    updateCategories(); // Carrega categorias iniciais
-    dateInput.valueAsDate = new Date(); // Data de hoje no form
-    updateDashboard();
+    updateCategories(); 
+    dateInput.valueAsDate = new Date(); 
 });
 
-// --- Core Logic ---
+// --- Core Logic (FIREBASE) ---
 
-function loadData() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    transactions = raw ? JSON.parse(raw) : {};
+function startSync() {
+    // Escuta mudanças no Firebase em tempo real
+    db.ref('transactions').on('value', (snapshot) => {
+        transactions = snapshot.val() || {};
+        updateDashboard();
+    });
 }
 
 function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    // Salva o objeto completo de transações no Firebase
+    db.ref('transactions').set(transactions);
 }
 
 function addTransaction(e) {
     e.preventDefault();
 
-    const type = typeSelect.value; // 'income' ou 'expense'
+    const type = typeSelect.value;
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const category = categorySelect.value;
@@ -77,15 +90,14 @@ function addTransaction(e) {
     }
 
     const [year, month, day] = dateValue.split('-');
-    const monthKey = String(parseInt(month)); // Remove zero à esquerda se houver
+    const monthKey = String(parseInt(month));
 
-    // Inicializa estrutura se não existir
     if (!transactions[year]) transactions[year] = {};
     if (!transactions[year][monthKey]) transactions[year][monthKey] = [];
 
     const newTrans = {
         id: Date.now(),
-        type: type, // Guarda se é receita ou despesa
+        type: type,
         date: dateValue,
         description: desc,
         value: amount,
@@ -94,9 +106,8 @@ function addTransaction(e) {
     };
 
     transactions[year][monthKey].push(newTrans);
-    saveData();
+    saveData(); // Agora salva no Firebase
 
-    // Se lançou em data diferente da atual, pergunta se quer ir pra lá
     if (year !== selectedYear || monthKey !== selectedMonth) {
         if(confirm("Lançamento salvo em outro mês. Deseja visualizar o mês do lançamento?")) {
             filterYear.value = year;
@@ -107,9 +118,9 @@ function addTransaction(e) {
     }
 
     form.reset();
-    dateInput.value = dateValue; // Mantém a data
-    document.querySelector(`input[name="user"][value="${user}"]`).checked = true; // Mantém usuário
-    updateCategories(); // Reseta categorias
+    dateInput.value = dateValue;
+    document.querySelector(`input[name="user"][value="${user}"]`).checked = true;
+    updateCategories();
     updateDashboard();
 }
 
@@ -117,17 +128,15 @@ function deleteTransaction(id) {
     if(confirm("Deseja realmente apagar este item?")) {
         const list = transactions[selectedYear][selectedMonth];
         transactions[selectedYear][selectedMonth] = list.filter(item => item.id !== id);
-        saveData();
-        updateDashboard();
+        saveData(); // Salva a exclusão no Firebase
     }
 }
 
-// --- Interface e Dashboard ---
+// --- Interface e Dashboard (Seu código original) ---
 
 function updateCategories() {
     const isIncome = typeSelect.value === 'income';
     const list = isIncome ? categoriesIncome : categoriesExpense;
-    
     categorySelect.innerHTML = '';
     list.forEach(cat => {
         const opt = document.createElement('option');
@@ -138,12 +147,8 @@ function updateCategories() {
 }
 
 function updateDashboard() {
-    // Limpa UI
     tableBody.innerHTML = '';
-    
     const list = (transactions[selectedYear] && transactions[selectedYear][selectedMonth]) || [];
-
-    // Variáveis de Cálculo
     let totalIncome = 0;
     let totalExpense = 0;
     let incomeMaria = 0;
@@ -153,12 +158,9 @@ function updateDashboard() {
         emptyMsg.style.display = 'block';
     } else {
         emptyMsg.style.display = 'none';
-        
-        // Ordena por data (mais recente primeiro)
         list.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         list.forEach(item => {
-            // Cálculos
             if (item.type === 'income') {
                 totalIncome += item.value;
                 if (item.user === 'Maria') incomeMaria += item.value;
@@ -167,9 +169,8 @@ function updateDashboard() {
                 totalExpense += item.value;
             }
 
-            // Renderiza Linha
             const row = document.createElement('tr');
-            if(item.type === 'income') row.classList.add('row-income'); // Estilo verde
+            if(item.type === 'income') row.classList.add('row-income');
 
             const [y, m, d] = item.date.split('-');
             const userClass = item.user === 'Maria' ? 'tag-maria' : 'tag-lucas';
@@ -191,28 +192,19 @@ function updateDashboard() {
         });
     }
 
-    // Atualiza Cards
     elTotalIncomes.textContent = formatCurrency(totalIncome);
     elTotalExpenses.textContent = formatCurrency(totalExpense);
-    
     const balance = totalIncome - totalExpense;
     elBalance.textContent = formatCurrency(balance);
-    
-    // Cor do Saldo
     elBalance.className = '';
     if (balance > 0) elBalance.classList.add('positive-text');
     else if (balance < 0) elBalance.classList.add('negative-text');
-
-    // Detalhe das Receitas
     elIncomeMaria.textContent = formatCurrency(incomeMaria);
     elIncomeLucas.textContent = formatCurrency(incomeLucas);
 }
 
-// --- Helpers ---
-
 function populateDateSelectors() {
     const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    
     filterMonth.innerHTML = '';
     months.forEach((m, i) => {
         const opt = document.createElement('option');
@@ -221,7 +213,6 @@ function populateDateSelectors() {
         if (i + 1 == selectedMonth) opt.selected = true;
         filterMonth.appendChild(opt);
     });
-
     const currYear = new Date().getFullYear();
     filterYear.innerHTML = '';
     for(let i = currYear - 2; i <= currYear + 2; i++){
@@ -239,7 +230,6 @@ function handleDateChange() {
     updateDashboard();
 }
 
-// Navegação de mês (botões setas)
 document.getElementById('prev-month').addEventListener('click', () => {
     let m = parseInt(selectedMonth) - 1;
     if (m < 1) { m = 12; filterYear.value = parseInt(selectedYear) - 1; }
@@ -270,7 +260,6 @@ function loadTheme() {
     }
 }
 
-// Listeners
 form.addEventListener('submit', addTransaction);
 filterMonth.addEventListener('change', handleDateChange);
 filterYear.addEventListener('change', handleDateChange);
