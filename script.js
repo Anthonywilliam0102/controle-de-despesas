@@ -43,7 +43,7 @@ let transactions = {};
 const categoriesExpense = [
     "Contas Fixas (Luz/Água/Net)", "Alimentação / Mercado", "Gasolina / Transporte",
     "Educação", "Streaming / Assinaturas", "Lazer / Restaurante", 
-    "Imprevistos", "Saúde / Farmácia", "Outros"
+    "Imprevistos", "Saúde / Farmácia", "Poupança", "Outros"
 ];
 const categoriesIncome = [
     "Salário Mensal", "Vale Alimentação", "Freelance / Extra", 
