@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro - Maria & Lucas</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="FINANÇAS LOGO.png">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <i class="ph ph-wallet"></i>
+                <h1>Finanças <span>Maria & Lucas</span></h1>
+            </div>
+            <button id="theme-toggle" aria-label="Alternar Tema">
+                <i class="ph ph-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="controls">
+            <div class="date-selector">
+                <button id="prev-month" class="nav-btn"><i class="ph ph-caret-left"></i></button>
+                <select id="filter-month"></select>
+                <select id="filter-year"></select>
+                <button id="next-month" class="nav-btn"><i class="ph ph-caret-right"></i></button>
+            </div>
+        </section>
+
+        <section class="dashboard">
+            <div class="card income-card">
+                <h3>Receitas (Entradas)</h3>
+                <p id="total-incomes" class="positive-text">R$ 0,00</p>
+                <div class="mini-stats">
+                    <span>Maria: <b id="income-maria">R$ 0</b></span>
+                    <span>Lucas: <b id="income-lucas">R$ 0</b></span>
+                </div>
+                <i class="ph ph-trend-up card-icon"></i>
+            </div>
+            
+            <div class="card expense-card">
+                <h3>Despesas (Saídas)</h3>
+                <p id="total-expenses" class="negative-text">R$ 0,00</p>
+                <i class="ph ph-trend-down card-icon"></i>
+            </div>
+
+            <div class="card balance-card">
+                <h3>Saldo Final</h3>
+                <p id="monthly-balance">R$ 0,00</p>
+                <i class="ph ph-scales card-icon"></i>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2><i class="ph ph-plus-circle"></i> Novo Lançamento</h2>
+            <form id="transaction-form">
+                <div class="form-grid">
+                    
+                    <div class="input-group">
+                        <label>Tipo</label>
+                        <select id="trans-type" onchange="updateCategories()">
+                            <option value="expense" selected>Despesa (Saída)</option>
+                            <option value="income">Receita (Entrada)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Descrição</label>
+                        <input type="text" id="desc" placeholder="Ex: Salário, Supermercado..." required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="amount" step="0.01" min="0.01" placeholder="0,00" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Categoria</label>
+                        <select id="category" required>
+                            </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Responsável</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="user" value="Maria" checked> Maria
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="user" value="Lucas"> Lucas
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Data</label>
+                        <input type="date" id="date-input" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-add">Adicionar Lançamento</button>
+            </form>
+        </section>
+
+        <section class="list-section">
+            <div class="list-header">
+                <h2>Extrato do Mês</h2>
+                <button class="btn-print" onclick="window.print()"><i class="ph ph-printer"></i> Imprimir</button>
+            </div>
+            
+            <div class="table-container">
+                <table id="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Descrição</th>
+                            <th>Categoria</th>
+                            <th>Quem</th>
+                            <th>Valor</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+                <div id="empty-msg" class="empty-state">Sem lançamentos neste mês.</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
